@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}About - Honda Insight Rescue{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-heart me-3"></i>
+                    About Honda Insight Rescue
+                </h1>
+                <p class="lead">
+                    A community-driven project to help Honda Insight owners find parts cars and keep these efficient hybrids on the road.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-question-circle text-primary me-2"></i>
+                        What is Honda Insight Rescue?
+                    </h2>
+                    <p class="lead">
+                        Honda Insight Rescue is an automated web scraping system that monitors salvage yards and auction sites 
+                        for Honda Insight vehicles (2000-2006). Our goal is to help the Honda Insight community find parts cars 
+                        before they're crushed or disappear.
+                    </p>
+                    
+                    <p>
+                        The first generation Honda Insight was a revolutionary vehicle - the first hybrid sold in America, 
+                        capable of achieving over 70 MPG. With only about 17,000 units sold between 2000-2006, these cars 
+                        are becoming increasingly rare. Every Insight saved helps preserve automotive history and keeps these 
+                        amazing efficient vehicles running.
+                    </p>
+                </div>
+            </div>
+
+            <div class="row mb-5">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">
+                                <i class="fas fa-search text-success me-2"></i>
+                                How It Works
+                            </h4>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Automatically scans Row52.com every 30 minutes
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Extracts VIN, year, location, and yard information
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Tracks changes and new listings
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Provides real-time updates via web interface
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">
+                                <i class="fas fa-users text-warning me-2"></i>
+                                Community Focus
+                            </h4>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-heart text-danger me-2"></i>
+                                    Built for InsightCentral.net community
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-recycle text-success me-2"></i>
+                                    Helps rescue parts and complete vehicles
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-tools text-primary me-2"></i>
+                                    Supports DIY repairs and restoration
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-leaf text-success me-2"></i>
+                                    Keeps efficient hybrids on the road
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-database text-info me-2"></i>
+                        Current Data Sources
+                    </h2>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>Row52.com (Pick-n-Pull)</h5>
+                            <p>
+                                Currently monitoring Pick-n-Pull locations across the United States. Row52 provides 
+                                real-time inventory from dozens of Pick-n-Pull yards, making it an excellent source 
+                                for finding Honda Insight parts cars.
+                            </p>
+                            
+                            <h6>Typical Information Available:</h6>
+                            <ul>
+                                <li>Vehicle VIN (for year identification)</li>
+                                <li>Yard location (city/state)</li>
+                                <li>Row number in yard</li>
+                                <li>Date vehicle was added to yard</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted">Coming Soon:</h6>
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-plus text-success me-1"></i> Copart.com</li>
+                                    <li><i class="fas fa-plus text-success me-1"></i> IAA-Auction.com</li>
+                                    <li><i class="fas fa-plus text-success me-1"></i> AutoTrader</li>
+                                    <li><i class="fas fa-plus text-success me-1"></i> Facebook Marketplace</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-car text-primary me-2"></i>
+                        Honda Insight (2000-2006) Overview
+                    </h2>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Production Years</h6>
+                            <p class="text-muted">2000-2006 (First Generation)</p>
+                            
+                            <h6>Total Production</h6>
+                            <p class="text-muted">~17,000 units (USA)</p>
+                            
+                            <h6>EPA Rating</h6>
+                            <p class="text-muted">Up to 70 MPG highway</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Engine</h6>
+                            <p class="text-muted">1.0L 3-cylinder + IMA</p>
+                            
+                            <h6>Transmission</h6>
+                            <p class="text-muted">5-speed manual or CVT</p>
+                            
+                            <h6>Weight</h6>
+                            <p class="text-muted">~1,850 lbs</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Body Style</h6>
+                            <p class="text-muted">2-door coupe</p>
+                            
+                            <h6>Seating</h6>
+                            <p class="text-muted">2 passengers</p>
+                            
+                            <h6>Status</h6>
+                            <p class="text-muted">Discontinued 2006</p>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5>Why Are These Cars Important?</h5>
+                    <p>
+                        The first-generation Honda Insight represents a pivotal moment in automotive history. 
+                        It was the first hybrid vehicle sold in America and achieved unprecedented fuel economy 
+                        that remains impressive even by today's standards. Despite their efficiency and innovative 
+                        technology, many Insights have been lost to time, accidents, or neglect.
+                    </p>
+                    
+                    <div class="bg-light p-4 rounded">
+                        <h6 class="text-primary">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            Did You Know?
+                        </h6>
+                        <p class="mb-0 small">
+                            The Honda Insight's aluminum space frame construction and lightweight design principles 
+                            influenced the development of many modern hybrid and electric vehicles. Each surviving 
+                            Insight is a piece of automotive innovation worth preserving.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-code text-success me-2"></i>
+                        Open Source Project
+                    </h2>
+                    
+                    <p>
+                        Honda Insight Rescue is completely open source and available on GitHub. The project is built 
+                        with Python, Flask, and modern web technologies. Community contributions are welcome!
+                    </p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Technologies Used:</h6>
+                            <ul>
+                                <li>Python 3.12+</li>
+                                <li>Flask web framework</li>
+                                <li>Beautiful Soup for web scraping</li>
+                                <li>Bootstrap 5 for UI</li>
+                                <li>SQLite for data storage</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Features:</h6>
+                            <ul>
+                                <li>Automated web scraping</li>
+                                <li>Real-time data updates</li>
+                                <li>REST API for data access</li>
+                                <li>Responsive web interface</li>
+                                <li>Change tracking and alerts</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="https://github.com/mike-cline-53/honda_insight_rescue" target="_blank" class="btn btn-dark btn-lg">
+                            <i class="fab fa-github me-2"></i>
+                            View on GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-5 text-center">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-users text-warning me-2"></i>
+                        Join the Community
+                    </h2>
+                    
+                    <p class="lead mb-4">
+                        Connect with other Honda Insight enthusiasts and get the latest updates on parts availability.
+                    </p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <i class="fas fa-globe fa-2x text-primary mb-3"></i>
+                                    <h5>InsightCentral.net</h5>
+                                    <p class="small text-muted">
+                                        The premier online community for Honda Insight owners, with forums, 
+                                        technical resources, and a marketplace.
+                                    </p>
+                                    <a href="https://insightcentral.net" target="_blank" class="btn btn-primary">
+                                        Visit Site
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <i class="fab fa-github fa-2x text-success mb-3"></i>
+                                    <h5>GitHub Repository</h5>
+                                    <p class="small text-muted">
+                                        Contribute to the project, report bugs, or suggest new features. 
+                                        All contributions are welcome!
+                                    </p>
+                                    <a href="https://github.com/mike-cline-53/honda_insight_rescue" target="_blank" class="btn btn-success">
+                                        Contribute
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

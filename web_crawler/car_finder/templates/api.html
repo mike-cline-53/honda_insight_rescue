@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation - Honda Insight Rescue{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-code me-3"></i>
+                    API Documentation
+                </h1>
+                <p class="lead">
+                    Access Honda Insight listing data programmatically through our REST API.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Overview
+                    </h2>
+                    <p class="lead">
+                        The Honda Insight Rescue API provides access to current vehicle listings, scan status, 
+                        and the ability to trigger manual scans.
+                    </p>
+                    
+                    <div class="bg-light p-4 rounded">
+                        <h6><i class="fas fa-link me-2"></i>Base URL</h6>
+                        <code id="base-url">https://your-domain.com/api</code>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="copyToClipboard('base-url')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <h5 class="mt-4">Authentication</h5>
+                    <p>Currently, no authentication is required for API access. All endpoints are publicly available.</p>
+                    
+                    <h5>Rate Limiting</h5>
+                    <p>Please be respectful with API usage. Excessive requests may be throttled.</p>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-list text-success me-2"></i>
+                        Endpoints
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    
+                    <!-- GET /api/listings -->
+                    <div class="border-bottom p-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5>
+                                    <span class="badge bg-success me-2">GET</span>
+                                    /api/listings
+                                </h5>
+                                <p class="text-muted">Retrieve current Honda Insight listings</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-outline-primary btn-sm" onclick="tryEndpoint('/api/listings')">
+                                    <i class="fas fa-play me-1"></i>Try It
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <h6 class="mt-3">Response Example:</h6>
+                        <pre class="bg-light p-3 rounded"><code>{
+  "listings": [
+    {
+      "vin": "JHMZE14742T000556",
+      "year": "2002",
+      "make": "Honda",
+      "model": "Insight",
+      "location": "Fresno",
+      "yard": "Fresno",
+      "row": "61",
+      "date_added": "Jul 02, 2025",
+      "source_url": "https://www.row52.com/Search/...",
+      "scraped_at": "2025-07-05T12:13:29.537861"
+    }
+  ],
+  "total_count": 6,
+  "last_updated": "2025-07-05T12:13:29.537857",
+  "scan_in_progress": false
+}</code></pre>
+                    </div>
+
+                    <!-- POST /api/scan -->
+                    <div class="border-bottom p-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5>
+                                    <span class="badge bg-warning me-2">POST</span>
+                                    /api/scan
+                                </h5>
+                                <p class="text-muted">Trigger a manual scan of all data sources</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-outline-warning btn-sm" onclick="triggerApiScan()">
+                                    <i class="fas fa-search me-1"></i>Trigger Scan
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <h6 class="mt-3">Success Response:</h6>
+                        <pre class="bg-light p-3 rounded"><code>{
+  "message": "Scan started",
+  "scan_in_progress": true
+}</code></pre>
+                        
+                        <h6 class="mt-3">Error Response (409 - Conflict):</h6>
+                        <pre class="bg-light p-3 rounded"><code>{
+  "error": "Scan already in progress"
+}</code></pre>
+                    </div>
+
+                    <!-- GET /api/status -->
+                    <div class="p-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5>
+                                    <span class="badge bg-info me-2">GET</span>
+                                    /api/status
+                                </h5>
+                                <p class="text-muted">Get current system status and scan information</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-outline-info btn-sm" onclick="tryEndpoint('/api/status')">
+                                    <i class="fas fa-info me-1"></i>Check Status
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <h6 class="mt-3">Response Example:</h6>
+                        <pre class="bg-light p-3 rounded"><code>{
+  "scan_in_progress": false,
+  "last_scan_time": "2025-07-05T12:13:29.537857",
+  "cached_count": 6
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h3 class="mb-4">
+                        <i class="fas fa-code text-warning me-2"></i>
+                        Code Examples
+                    </h3>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>JavaScript (Fetch)</h5>
+                            <pre class="bg-dark text-light p-3 rounded"><code>// Get current listings
+fetch('/api/listings')
+  .then(response => response.json())
+  .then(data => {
+    console.log('Found', data.total_count, 'vehicles');
+    data.listings.forEach(vehicle => {
+      console.log(vehicle.year, vehicle.make, vehicle.model);
+    });
+  });
+
+// Trigger a scan
+fetch('/api/scan', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+.then(response => response.json())
+.then(data => console.log(data.message));</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Python (Requests)</h5>
+                            <pre class="bg-dark text-light p-3 rounded"><code>import requests
+
+# Get current listings
+response = requests.get('https://your-domain.com/api/listings')
+data = response.json()
+
+print(f"Found {data['total_count']} vehicles")
+for vehicle in data['listings']:
+    print(f"{vehicle['year']} {vehicle['make']} {vehicle['model']}")
+
+# Trigger a scan
+scan_response = requests.post('https://your-domain.com/api/scan')
+if scan_response.status_code == 200:
+    print("Scan started successfully")
+else:
+    print("Error:", scan_response.json()['error'])</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-body p-5">
+                    <h3 class="mb-4">
+                        <i class="fas fa-database text-info me-2"></i>
+                        Data Schema
+                    </h3>
+                    
+                    <h5>Vehicle Object</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>vin</code></td>
+                                    <td>string</td>
+                                    <td>Vehicle Identification Number</td>
+                                    <td>"JHMZE14742T000556"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>year</code></td>
+                                    <td>string|null</td>
+                                    <td>Model year (decoded from VIN)</td>
+                                    <td>"2002"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>make</code></td>
+                                    <td>string</td>
+                                    <td>Vehicle manufacturer</td>
+                                    <td>"Honda"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>model</code></td>
+                                    <td>string</td>
+                                    <td>Vehicle model</td>
+                                    <td>"Insight"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>location</code></td>
+                                    <td>string|null</td>
+                                    <td>City/state where vehicle is located</td>
+                                    <td>"Fresno"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>yard</code></td>
+                                    <td>string|null</td>
+                                    <td>Junkyard or facility name</td>
+                                    <td>"PICK-n-PULL Fresno"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>row</code></td>
+                                    <td>string|null</td>
+                                    <td>Row number in the yard</td>
+                                    <td>"61"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>date_added</code></td>
+                                    <td>string|null</td>
+                                    <td>Date vehicle was added to yard</td>
+                                    <td>"Jul 02, 2025"</td>
+                                </tr>
+                                <tr>
+                                    <td><code>source_url</code></td>
+                                    <td>string</td>
+                                    <td>URL where listing was found</td>
+                                    <td>"https://www.row52.com/..."</td>
+                                </tr>
+                                <tr>
+                                    <td><code>scraped_at</code></td>
+                                    <td>string</td>
+                                    <td>ISO timestamp of when data was scraped</td>
+                                    <td>"2025-07-05T12:13:29.537861"</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-5">
+                    <h3 class="mb-4">
+                        <i class="fas fa-tools text-primary me-2"></i>
+                        Interactive API Tester
+                    </h3>
+                    
+                    <div id="api-tester">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Endpoint</label>
+                                <select class="form-select" id="endpoint-select">
+                                    <option value="/api/listings">GET /api/listings</option>
+                                    <option value="/api/status">GET /api/status</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button class="btn btn-primary" onclick="testSelectedEndpoint()">
+                                        <i class="fas fa-play me-2"></i>Test Endpoint
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="api-response" style="display: none;">
+                            <h6>Response:</h6>
+                            <pre class="bg-light p-3 rounded" id="response-content"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    navigator.clipboard.writeText(element.textContent).then(() => {
+        showAlert('Copied to clipboard!', 'success');
+    });
+}
+
+function tryEndpoint(endpoint) {
+    fetch(endpoint)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('response-content').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('api-response').style.display = 'block';
+            document.getElementById('api-response').scrollIntoView({ behavior: 'smooth' });
+        })
+        .catch(error => {
+            showAlert('Error testing endpoint: ' + error.message, 'danger');
+        });
+}
+
+function triggerApiScan() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Scanning...';
+    button.disabled = true;
+    
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('response-content').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('api-response').style.display = 'block';
+        document.getElementById('api-response').scrollIntoView({ behavior: 'smooth' });
+        
+        if (data.error) {
+            showAlert(data.error, 'warning');
+        } else {
+            showAlert('Scan started successfully!', 'success');
+        }
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 3000);
+    })
+    .catch(error => {
+        showAlert('Error triggering scan: ' + error.message, 'danger');
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function testSelectedEndpoint() {
+    const endpoint = document.getElementById('endpoint-select').value;
+    tryEndpoint(endpoint);
+}
+
+// Update base URL to current domain
+document.addEventListener('DOMContentLoaded', function() {
+    const baseUrlElement = document.getElementById('base-url');
+    baseUrlElement.textContent = window.location.origin + '/api';
+});
+</script>
+{% endblock %} 
