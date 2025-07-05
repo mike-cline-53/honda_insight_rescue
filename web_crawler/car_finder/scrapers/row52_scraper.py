@@ -45,15 +45,16 @@ class Row52Scraper:
     """Scraper for Row52.com Honda Insight listings."""
     
     def __init__(self):
+        self.name = "Row52"
         self.base_url = "https://www.row52.com"
-        self.search_url = f"{self.base_url}/Search/?YMMorVin=YMM&Year=2000-2006&V1=&V2=&V3=&V4=&V5=&V6=&V7=&V8=&V9=&V10=&V11=&V12=&V13=&V14=&V15=&V16=&V17=&ZipCode=&Page=1&ModelId=2466&MakeId=145&LocationId=&IsVin=false&Distance=50"
+        self.search_url = f"{self.base_url}/Search/?YMMorVin=YMM&Year=1999-2006&V1=&V2=&V3=&V4=&V5=&V6=&V7=&V8=&V9=&V10=&V11=&V12=&V13=&V14=&V15=&V16=&V17=&ZipCode=&Page=1&ModelId=2466&MakeId=145&LocationId=&IsVin=false&Distance=50"
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         
     def scrape_listings(self) -> List[Vehicle]:
         """Scrape Honda Insight listings from Row52."""
-        logger.info("Starting Row52 scraping for Honda Insight 2000-2006")
+        logger.info("Starting Row52 scraping for Honda Insight 1999-2006")
         
         try:
             # Fetch the page

@@ -9,12 +9,13 @@ from typing import List, Dict
 import threading
 import time
 import logging
-from dataclasses import asdict
+
 
 # Add the scrapers directory to the path
 sys.path.append(str(Path(__file__).parent / "scrapers"))
 
-from row52_scraper import Row52Scraper, Vehicle
+from scrapers.scraper_manager import ScraperManager
+from scrapers.base_scraper import Vehicle
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,20 +40,26 @@ def scan_sites():
     logger.info("Starting background scan...")
     
     try:
-        scraper = Row52Scraper()
-        vehicles = scraper.scrape_listings()
-        
-        cached_results = {
-            'row52': vehicles,
-            'timestamp': datetime.now().isoformat(),
-            'total_count': len(vehicles)
-        }
-        
-        last_scan_time = datetime.now()
-        logger.info(f"Background scan completed. Found {len(vehicles)} vehicles.")
-        
-        # Save to file
-        save_results_to_file(cached_results)
+        with ScraperManager() as manager:
+            results = manager.scrape_all(max_workers=9, timeout=300)
+            
+            # Flatten results into a single list for backward compatibility
+            all_vehicles = []
+            for site_name, vehicles in results.items():
+                all_vehicles.extend(vehicles)
+            
+            cached_results = {
+                'all_sites': all_vehicles,
+                'by_site': results,
+                'timestamp': datetime.now().isoformat(),
+                'total_count': len(all_vehicles)
+            }
+            
+            last_scan_time = datetime.now()
+            logger.info(f"Background scan completed. Found {len(all_vehicles)} vehicles across {len(results)} sites.")
+            
+            # Save to file
+            save_results_to_file(cached_results)
         
     except Exception as e:
         logger.error(f"Error during background scan: {e}")
@@ -70,11 +77,14 @@ def save_results_to_file(results):
         filepath = data_dir / filename
         
         # Convert Vehicle objects to dictionaries
+        sites_data = {}
+        for site_name, vehicles in results['by_site'].items():
+            sites_data[site_name] = [vehicle.to_dict() for vehicle in vehicles]
+        
         data = {
             'timestamp': results['timestamp'],
-            'sites': {
-                'row52': [vehicle.to_dict() for vehicle in results['row52']]
-            }
+            'total_count': results['total_count'],
+            'sites': sites_data
         }
         
         with open(filepath, 'w') as f:
@@ -120,25 +130,35 @@ def api_listings():
         file_data = load_latest_results()
         if file_data:
             # Convert back to Vehicle objects for consistency
-            vehicles = []
-            for vehicle_data in file_data['sites']['row52']:
-                vehicle = Vehicle(
-                    vin=vehicle_data['vin'],
-                    year=vehicle_data['year'],
-                    make=vehicle_data['make'],
-                    model=vehicle_data['model'],
-                    location=vehicle_data['location'],
-                    yard=vehicle_data['yard'],
-                    row=vehicle_data['row'],
-                    date_added=vehicle_data['date_added'],
-                    source_url=vehicle_data['source_url']
-                )
-                vehicles.append(vehicle)
+            all_vehicles = []
+            by_site = {}
+            
+            for site_name, vehicles_data in file_data['sites'].items():
+                site_vehicles = []
+                for vehicle_data in vehicles_data:
+                    vehicle = Vehicle(
+                        vin=vehicle_data['vin'],
+                        year=vehicle_data.get('year'),
+                        make=vehicle_data.get('make'),
+                        model=vehicle_data.get('model'),
+                        location=vehicle_data.get('location'),
+                        yard=vehicle_data.get('yard'),
+                        row=vehicle_data.get('row'),
+                        date_added=vehicle_data.get('date_added'),
+                        source_url=vehicle_data.get('source_url'),
+                        price=vehicle_data.get('price'),
+                        contact_info=vehicle_data.get('contact_info')
+                    )
+                    site_vehicles.append(vehicle)
+                    all_vehicles.append(vehicle)
+                
+                by_site[site_name] = site_vehicles
             
             cached_results = {
-                'row52': vehicles,
+                'all_sites': all_vehicles,
+                'by_site': by_site,
                 'timestamp': file_data['timestamp'],
-                'total_count': len(vehicles)
+                'total_count': len(all_vehicles)
             }
             last_scan_time = datetime.fromisoformat(file_data['timestamp'])
     
@@ -151,10 +171,19 @@ def api_listings():
         })
     
     # Convert Vehicle objects to dictionaries for JSON response
-    listings = [asdict(vehicle) for vehicle in cached_results['row52']]
+    listings = [vehicle.to_dict() for vehicle in cached_results['all_sites']]
+    
+    # Also provide breakdown by site
+    by_site = {}
+    for site_name, vehicles in cached_results['by_site'].items():
+        by_site[site_name] = {
+            'count': len(vehicles),
+            'listings': [vehicle.to_dict() for vehicle in vehicles]
+        }
     
     return jsonify({
         'listings': listings,
+        'by_site': by_site,
         'total_count': cached_results['total_count'],
         'last_updated': cached_results['timestamp'],
         'scan_in_progress': scan_in_progress
@@ -183,7 +212,8 @@ def api_status():
     return jsonify({
         'scan_in_progress': scan_in_progress,
         'last_scan_time': last_scan_time.isoformat() if last_scan_time else None,
-        'cached_count': len(cached_results.get('row52', []))
+        'cached_count': len(cached_results.get('all_sites', [])),
+        'sites_count': len(cached_results.get('by_site', {}))
     })
 
 @app.route('/about')
@@ -201,31 +231,13 @@ def static_files(filename):
     """Serve static files."""
     return send_from_directory('static', filename)
 
-def start_background_scanner():
-    """Start the background scanning thread."""
-    def scanner_loop():
-        while True:
-            try:
-                scan_sites()
-                # Wait 30 minutes before next scan
-                time.sleep(1800)
-            except Exception as e:
-                logger.error(f"Error in scanner loop: {e}")
-                time.sleep(300)  # Wait 5 minutes on error
-    
-    thread = threading.Thread(target=scanner_loop)
-    thread.daemon = True
-    thread.start()
-    logger.info("Background scanner started")
-
 if __name__ == '__main__':
     # Load initial data
     file_data = load_latest_results()
     if file_data:
         logger.info("Loaded initial data from file")
-    
-    # Start background scanner
-    start_background_scanner()
+    else:
+        logger.info("No previous scan data found. Use the web interface to start a scan.")
     
     # Run the Flask app
     app.run(debug=True, host='0.0.0.0', port=5000) 
