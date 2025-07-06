@@ -148,11 +148,14 @@
                     Available Vehicles
                 </h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary btn-sm" onclick="toggleView('grid')">
-                        <i class="fas fa-th me-1"></i>Grid
+                    <button class="btn btn-success btn-sm" onclick="copyTableData(event)">
+                        <i class="fas fa-copy me-1"></i>Copy Table
                     </button>
-                    <button class="btn btn-outline-primary btn-sm" onclick="toggleView('list')">
-                        <i class="fas fa-list me-1"></i>List
+                    <button class="btn btn-primary btn-sm" id="table-view-btn" onclick="toggleView('table')">
+                        <i class="fas fa-table me-1"></i>Table
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" id="grid-view-btn" onclick="toggleView('grid')">
+                        <i class="fas fa-th me-1"></i>Grid
                     </button>
                 </div>
             </div>
@@ -170,8 +173,32 @@
                 <p class="text-muted">Try adjusting your filters or check back later for new listings.</p>
             </div>
             
-            <div id="listings-container" class="row">
-                <!-- Listings will be populated here by JavaScript -->
+            <!-- Table View -->
+            <div id="table-container" class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Year</th>
+                            <th>Make</th>
+                            <th>Model</th>
+                            <th>VIN/ID</th>
+                            <th>Location</th>
+                            <th>Yard</th>
+                            <th>Price</th>
+                            <th>Date Added</th>
+                            <th>Source</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-listings">
+                        <!-- Table rows will be populated here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Grid View -->
+            <div id="grid-container" class="row" style="display: none;">
+                <!-- Grid cards will be populated here by JavaScript -->
             </div>
         </div>
     </div>
@@ -194,7 +221,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <a href="#" class="btn btn-primary" id="view-source-btn" target="_blank">
-                    <i class="fas fa-external-link-alt me-1"></i>View on Row52
+                    <i class="fas fa-external-link-alt me-1"></i>View Source
                 </a>
             </div>
         </div>
@@ -205,7 +232,7 @@
 {% block extra_js %}
 <script>
 let currentListings = [];
-let currentView = 'grid';
+let currentView = 'table';  // Default to table view
 let refreshInterval;
 
 // Initialize the page
@@ -251,22 +278,91 @@ function updateStats(data) {
 }
 
 function displayListings(listings) {
-    const container = document.getElementById('listings-container');
+    const tableContainer = document.getElementById('table-container');
+    const gridContainer = document.getElementById('grid-container');
     const noResults = document.getElementById('no-results');
     
     if (!listings || listings.length === 0) {
-        container.innerHTML = '';
+        document.getElementById('table-listings').innerHTML = '';
+        gridContainer.innerHTML = '';
         noResults.style.display = 'block';
+        tableContainer.style.display = 'none';
+        gridContainer.style.display = 'none';
         return;
     }
     
     noResults.style.display = 'none';
     
-    const listingsHtml = listings.map(vehicle => {
+    if (currentView === 'table') {
+        displayTableView(listings);
+        tableContainer.style.display = 'block';
+        gridContainer.style.display = 'none';
+    } else {
+        displayGridView(listings);
+        gridContainer.style.display = 'block';
+        tableContainer.style.display = 'none';
+    }
+}
+
+function displayTableView(listings) {
+    const tableBody = document.getElementById('table-listings');
+    
+    const tableRowsHtml = listings.map(vehicle => {
+        const year = vehicle.year || 'Unknown';
+        const make = vehicle.make || 'Honda';
+        const model = vehicle.model || 'Insight';
+        const vin = vehicle.vin_id || vehicle.vin || 'Not Found';
+        const location = vehicle.location || 'Unknown';
+        const yard = vehicle.yard || 'Unknown';
+        const price = vehicle.price || 'Not Listed';
+        const dateAdded = vehicle.date_added || 'Unknown';
+        const sourceUrl = vehicle.source_url || '#';
+        
+        // Determine the source name from the URL
+        let sourceName = 'Unknown';
+        if (sourceUrl.includes('row52.com')) {
+            sourceName = 'Row52';
+        } else if (sourceUrl.includes('car-part.com')) {
+            sourceName = 'Car-Part';
+        } else if (sourceUrl.includes('lkq')) {
+            sourceName = 'LKQ';
+        }
+        
+        return `
+            <tr>
+                <td><span class="year-badge">${year}</span></td>
+                <td>${make}</td>
+                <td>${model}</td>
+                <td><code class="vin-code">${formatVin(vin)}</code></td>
+                <td>${location}</td>
+                <td>${yard}</td>
+                <td>${price}</td>
+                <td>${dateAdded}</td>
+                <td>
+                    <a href="${sourceUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i>${sourceName}
+                    </a>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="showVehicleDetails('${vin}')">
+                        <i class="fas fa-info-circle me-1"></i>Details
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = tableRowsHtml;
+}
+
+function displayGridView(listings) {
+    const gridContainer = document.getElementById('grid-container');
+    
+    const gridHtml = listings.map(vehicle => {
         const year = vehicle.year || 'Unknown';
         const location = vehicle.location || 'Unknown';
         const yard = vehicle.yard || 'Unknown';
-        const vin = vehicle.vin || 'Unknown';
+        const vin = vehicle.vin_id || vehicle.vin || 'Not Found';
         
         return `
             <div class="col-md-6 col-lg-4 mb-4">
@@ -280,7 +376,7 @@ function displayListings(listings) {
                     </div>
                     
                     <div class="mb-3">
-                        <small class="text-muted">VIN:</small>
+                        <small class="text-muted">VIN/ID:</small>
                         <div class="vin-code">${formatVin(vin)}</div>
                     </div>
                     
@@ -306,11 +402,11 @@ function displayListings(listings) {
         `;
     }).join('');
     
-    container.innerHTML = listingsHtml;
+    gridContainer.innerHTML = gridHtml;
 }
 
 function showVehicleDetails(vin) {
-    const vehicle = currentListings.find(v => v.vin === vin);
+    const vehicle = currentListings.find(v => (v.vin_id === vin || v.vin === vin));
     if (!vehicle) return;
     
     const modalContent = `
@@ -321,7 +417,8 @@ function showVehicleDetails(vin) {
                     <tr><td><strong>Year:</strong></td><td>${vehicle.year || 'Unknown'}</td></tr>
                     <tr><td><strong>Make:</strong></td><td>${vehicle.make || 'Honda'}</td></tr>
                     <tr><td><strong>Model:</strong></td><td>${vehicle.model || 'Insight'}</td></tr>
-                    <tr><td><strong>VIN:</strong></td><td class="vin-code">${vehicle.vin}</td></tr>
+                    <tr><td><strong>VIN/ID:</strong></td><td class="vin-code">${vehicle.vin_id || vehicle.vin || 'Not Found'}</td></tr>
+                    <tr><td><strong>Price:</strong></td><td>${vehicle.price || 'Not Listed'}</td></tr>
                 </table>
             </div>
             <div class="col-md-6">
@@ -337,7 +434,8 @@ function showVehicleDetails(vin) {
         <div class="mt-3">
             <h6>Additional Information</h6>
             <div class="bg-light p-3 rounded">
-                <p class="mb-1"><strong>Source:</strong> Row52.com</p>
+                <p class="mb-1"><strong>Source URL:</strong> <a href="${vehicle.source_url || '#'}" target="_blank" class="text-break">${vehicle.source_url || 'Not Available'}</a></p>
+                <p class="mb-1"><strong>Contact Info:</strong> ${vehicle.contact_info || 'Not Available'}</p>
                 <p class="mb-0"><strong>Scraped:</strong> ${formatDate(vehicle.scraped_at)}</p>
             </div>
         </div>
@@ -404,7 +502,8 @@ function applyFilters() {
     }
     
     if (vinSearch) {
-        filtered = filtered.filter(v => v.vin && v.vin.toLowerCase().includes(vinSearch));
+        const vin = v => (v.vin_id || v.vin || '').toLowerCase();
+        filtered = filtered.filter(v => vin(v).includes(vinSearch));
     }
     
     displayListings(filtered);
@@ -412,23 +511,323 @@ function applyFilters() {
 
 function toggleView(view) {
     currentView = view;
-    // View toggling logic would go here
-    // For now, we'll just keep the grid view
+    
+    // Update button states
+    const tableBtn = document.getElementById('table-view-btn');
+    const gridBtn = document.getElementById('grid-view-btn');
+    
+    if (view === 'table') {
+        tableBtn.className = 'btn btn-primary btn-sm';
+        gridBtn.className = 'btn btn-outline-primary btn-sm';
+    } else {
+        tableBtn.className = 'btn btn-outline-primary btn-sm';
+        gridBtn.className = 'btn btn-primary btn-sm';
+    }
+    
+    // Re-display listings in the selected view
+    displayListings(currentListings);
 }
 
 function showSpinner() {
     document.getElementById('loading-spinner').style.display = 'block';
-    document.getElementById('listings-container').style.display = 'none';
+    document.getElementById('table-container').style.display = 'none';
+    document.getElementById('grid-container').style.display = 'none';
 }
 
 function hideSpinner() {
     document.getElementById('loading-spinner').style.display = 'none';
-    document.getElementById('listings-container').style.display = 'block';
+    // The appropriate container will be shown by displayListings()
 }
 
 function startAutoRefresh() {
     // Refresh every 5 minutes
     refreshInterval = setInterval(refreshListings, 300000);
+}
+
+function formatVin(vin) {
+    if (!vin || vin === 'Not Found') return vin;
+    // If it's a 17-character VIN, format it nicely
+    if (vin.length === 17) {
+        return vin.toUpperCase();
+    }
+    return vin;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    } catch (e) {
+        return dateString;
+    }
+}
+
+function copyTableData(event) {
+    console.log('copyTableData function called');
+    
+    // Prevent event bubbling and default behavior
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // Get the currently displayed listings (respecting any filters)
+    const filteredListings = getFilteredListings();
+    
+    console.log('Filtered listings:', filteredListings);
+    
+    if (!filteredListings || filteredListings.length === 0) {
+        showAlert('No data to copy. Please refresh the listings first.', 'warning');
+        return;
+    }
+    
+    // Ask user which format they prefer
+    const useBBCode = confirm('Choose table format:\n\nOK = BBCode format (for forums that support [table] tags)\nCancel = Plain text format (for forums that don\'t support BBCode)');
+    
+    let tableText;
+    
+    if (useBBCode) {
+        // BBCode format for forums that support it
+        const header = `Honda Insight Parts Cars - ${new Date().toLocaleDateString()}
+Found ${filteredListings.length} vehicles:
+
+[b]Data Sources:[/b]
+• [b]Row52[/b] - Clickable links lead directly to the vehicle listing
+• [b]LKQ[/b] - Clickable links lead directly to the vehicle listing  
+• [b]Car-Part[/b] - No direct links available (search their site manually). 
+Note: To cut down on the noise of people selling single parts, I searched all years for multiple part selections (1 search = all years for one part). All results are compiled, and then dissolved by the "Stock #" which is a unique ID for each car. By doing this, the only Insights (Stock #'s) listed from Car-Part are selling more than 1 part, so that is hopefully a parts car and not just an individual engine or door, etc.
+• [b]All others[/b] - I am supposedly scraping all other sites suggested here, but they haven't been thoroughly vetted in the way that Row52, LKQ, and Car-Part have been. More to come!
+
+[i]Note: Vehicle availability changes rapidly. Always verify current status before traveling.[/i]
+
+[table]
+[tr][th]Source[/th][th]Year[/th][th]Make[/th][th]Model[/th][th]VIN/ID[/th][th]Location[/th][th]Yard[/th][th]Price[/th][th]Date Added[/th][/tr]`;
+        
+        const rows = filteredListings.map(vehicle => {
+            const year = vehicle.year || 'Unknown';
+            const make = vehicle.make || 'Honda';
+            const model = vehicle.model || 'Insight';
+            const vin = vehicle.vin_id || vehicle.vin || 'Not Found';
+            const location = vehicle.location || 'Unknown';
+            const yard = vehicle.yard || 'Unknown';
+            const price = vehicle.price || 'Not Listed';
+            const dateAdded = vehicle.date_added || 'Unknown';
+            
+            // Determine source name and create hyperlink
+            let sourceName = 'Unknown';
+            let sourceCell = 'Unknown';
+            const sourceUrl = vehicle.source_url || '';
+            
+            if (sourceUrl.includes('row52.com')) {
+                sourceName = 'Row52';
+                sourceCell = `[url=${sourceUrl}]${sourceName}[/url]`;
+            } else if (sourceUrl.includes('car-part.com')) {
+                sourceName = 'Car-Part';
+                sourceCell = sourceName; // No hyperlink for car-part.com
+            } else if (sourceUrl.includes('lkq')) {
+                sourceName = 'LKQ';
+                sourceCell = `[url=${sourceUrl}]${sourceName}[/url]`;
+            } else if (sourceUrl) {
+                sourceName = 'Other';
+                sourceCell = `[url=${sourceUrl}]${sourceName}[/url]`;
+            }
+            
+            return `[tr][td]${sourceCell}[/td][td]${year}[/td][td]${make}[/td][td]${model}[/td][td]${vin}[/td][td]${location}[/td][td]${yard}[/td][td]${price}[/td][td]${dateAdded}[/td][/tr]`;
+        }).join('\n');
+        
+        const footer = `[/table]
+
+Data scraped from Honda Insight Rescue
+Please verify details with the source before making any purchases.`;
+        
+        tableText = header + '\n' + rows + '\n' + footer;
+    } else {
+        // Plain text format for forums that don't support BBCode
+        const header = `Honda Insight Parts Cars - ${new Date().toLocaleDateString()}
+Found ${filteredListings.length} vehicles:
+
+DATA SOURCES:
+• Row52 - URLs provided lead directly to vehicle listings
+• LKQ - URLs provided lead directly to vehicle listings
+• Car-Part - No direct links available (search their site manually). 
+Note: To cut down on the noise of people selling single parts, I searched all years for multiple part selections (1 search = all years for one part). All results are compiled, and then dissolved by the "Stock #" which is a unique ID for each car. By doing this, the only Insights (Stock #'s) listed from Car-Part are selling more than 1 part, so that is hopefully a parts car and not just an individual engine or door, etc.
+• All others - I am supposedly scraping all other sites suggested here, but they haven't been thoroughly vetted in the way that Row52, LKQ, and Car-Part have been. More to come!
+
+NOTE: Vehicle availability changes rapidly. Always verify current status before traveling.
+
+Source | ${'Year'.padEnd(6)} | ${'Make'.padEnd(8)} | ${'Model'.padEnd(8)} | ${'VIN/ID'.padEnd(18)} | ${'Location'.padEnd(12)} | ${'Yard'.padEnd(20)} | ${'Price'.padEnd(12)} | ${'Date Added'.padEnd(12)}
+${'-'.repeat(50)}|${'-'.repeat(8)}|${'-'.repeat(10)}|${'-'.repeat(10)}|${'-'.repeat(20)}|${'-'.repeat(14)}|${'-'.repeat(22)}|${'-'.repeat(14)}|${'-'.repeat(14)}`;
+        
+        const rows = filteredListings.map(vehicle => {
+            const year = (vehicle.year || 'Unknown').toString().padEnd(6);
+            const make = (vehicle.make || 'Honda').padEnd(8);
+            const model = (vehicle.model || 'Insight').padEnd(8);
+            const vin = (vehicle.vin_id || vehicle.vin || 'Not Found').padEnd(18);
+            const location = (vehicle.location || 'Unknown').padEnd(12);
+            const yard = (vehicle.yard || 'Unknown').substring(0, 20).padEnd(20);
+            const price = (vehicle.price || 'Not Listed').padEnd(12);
+            const dateAdded = (vehicle.date_added || 'Unknown').padEnd(12);
+            
+            // Determine source name and create hyperlink for plain text
+            let sourceName = 'Unknown';
+            let sourceCell = 'Unknown';
+            const sourceUrl = vehicle.source_url || '';
+            
+            if (sourceUrl.includes('row52.com')) {
+                sourceName = 'Row52';
+                sourceCell = `${sourceName} (${sourceUrl})`;
+            } else if (sourceUrl.includes('car-part.com')) {
+                sourceName = 'Car-Part';
+                sourceCell = sourceName; // No hyperlink for car-part.com
+            } else if (sourceUrl.includes('lkq')) {
+                sourceName = 'LKQ';
+                sourceCell = `${sourceName} (${sourceUrl})`;
+            } else if (sourceUrl) {
+                sourceName = 'Other';
+                sourceCell = `${sourceName} (${sourceUrl})`;
+            }
+            
+            // For plain text, we need to handle the variable width of the source column
+            // Since URLs make it much wider, we'll adjust the format
+            return `${sourceCell} | ${year} | ${make} | ${model} | ${vin} | ${location} | ${yard} | ${price} | ${dateAdded}`;
+        }).join('\n');
+        
+        const footer = `
+
+Data scraped from Honda Insight Rescue
+Please verify details with the source before making any purchases.`;
+        
+        tableText = header + '\n' + rows + '\n' + footer;
+    }
+    
+    console.log('Generated table text:', tableText);
+    
+    // Copy to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tableText).then(() => {
+            const formatName = useBBCode ? 'BBCode' : 'plain text';
+            showAlert(`Table data copied to clipboard in ${formatName} format! ${filteredListings.length} vehicles included.`, 'success');
+        }).catch(err => {
+            console.error('Clipboard API failed:', err);
+            fallbackCopy(tableText, useBBCode, filteredListings.length);
+        });
+    } else {
+        console.log('Clipboard API not supported, using fallback');
+        fallbackCopy(tableText, useBBCode, filteredListings.length);
+    }
+}
+
+function fallbackCopy(text, useBBCode, vehicleCount) {
+    try {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+            const formatName = useBBCode ? 'BBCode' : 'plain text';
+            showAlert(`Table data copied to clipboard in ${formatName} format! ${vehicleCount} vehicles included.`, 'success');
+        } else {
+            throw new Error('execCommand failed');
+        }
+    } catch (err) {
+        console.error('All copy methods failed:', err);
+        // Show the text in a modal as a last resort
+        showCopyModal(text, useBBCode, vehicleCount);
+    }
+}
+
+function showCopyModal(text, useBBCode, vehicleCount) {
+    const formatName = useBBCode ? 'BBCode' : 'plain text';
+    const modal = `
+        <div class="modal fade" id="copyModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Copy Table Data</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Copy failed automatically. Please manually copy the text below:</p>
+                        <textarea class="form-control" rows="20" readonly id="copyText">${text}</textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="selectAllText()">Select All</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('copyModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    const copyModal = new bootstrap.Modal(document.getElementById('copyModal'));
+    copyModal.show();
+}
+
+function selectAllText() {
+    const textArea = document.getElementById('copyText');
+    textArea.select();
+    textArea.setSelectionRange(0, 99999); // For mobile devices
+}
+
+function getFilteredListings() {
+    // Get the currently applied filters
+    const yearFilter = document.getElementById('year-filter').value;
+    const locationFilter = document.getElementById('location-filter').value;
+    const vinSearch = document.getElementById('vin-search').value.toLowerCase();
+    
+    let filtered = currentListings;
+    
+    if (yearFilter) {
+        filtered = filtered.filter(v => v.year === yearFilter);
+    }
+    
+    if (locationFilter) {
+        filtered = filtered.filter(v => v.location && v.location.includes(locationFilter));
+    }
+    
+    if (vinSearch) {
+        const vin = v => (v.vin_id || v.vin || '').toLowerCase();
+        filtered = filtered.filter(v => vin(v).includes(vinSearch));
+    }
+    
+    return filtered;
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alert-container');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    alertContainer.appendChild(alertDiv);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
 }
 
 // Clear interval when page is unloaded

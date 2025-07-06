@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Vehicle:
     """Data class for vehicle listings."""
-    vin: str
+    vin: str  # Can be either a VIN or internal ID
     year: Optional[str] = None
     make: Optional[str] = None
     model: Optional[str] = None
@@ -32,7 +32,7 @@ class Vehicle:
     def to_dict(self) -> Dict:
         """Convert to dictionary for serialization."""
         return {
-            'vin': self.vin,
+            'vin': self.vin,  # Keep as 'vin' for backward compatibility
             'year': self.year,
             'make': self.make,
             'model': self.model,
@@ -81,6 +81,202 @@ class BaseScraper(ABC):
         if hasattr(self, 'session'):
             self.session.close()
     
+    def _is_valid_vin(self, vin: str) -> bool:
+        """
+        Validate if a VIN is properly formatted.
+        
+        Args:
+            vin: VIN string to validate
+            
+        Returns:
+            bool: True if VIN is valid, False otherwise
+        """
+        if not vin or not isinstance(vin, str):
+            return False
+            
+        # Remove whitespace
+        vin = vin.strip()
+        
+        # Check length (must be 17 characters)
+        if len(vin) != 17:
+            return False
+            
+        # Check if all characters are alphanumeric
+        if not vin.isalnum():
+            return False
+            
+        # Check for invalid characters (I, O, Q are not allowed in VINs)
+        invalid_chars = set('IOQ')
+        if any(char in invalid_chars for char in vin.upper()):
+            return False
+            
+        # For Honda Insight, VIN should start with JHMZE
+        if vin.upper().startswith('JHMZE'):
+            return True
+            
+        # Accept other valid VIN patterns but log a warning
+        logger.warning(f"VIN {vin} doesn't match Honda Insight pattern but appears valid")
+        return True
+    
+    def _is_valid_honda_insight_vin(self, vin: str) -> bool:
+        """
+        Validate if a VIN is specifically for a Honda Insight.
+        
+        Args:
+            vin: VIN string to validate
+            
+        Returns:
+            bool: True if VIN is valid Honda Insight VIN, False otherwise
+        """
+        if not self._is_valid_vin(vin):
+            return False
+            
+        # Honda Insight VINs should start with JHMZE
+        return vin.upper().startswith('JHMZE')
+    
+    def _clean_price(self, price: str) -> Optional[str]:
+        """
+        Clean and validate price data.
+        
+        Args:
+            price: Raw price string
+            
+        Returns:
+            str: Cleaned price string or None if invalid
+        """
+        if not price or not isinstance(price, str):
+            return None
+            
+        # Remove extra whitespace and newlines
+        price = price.strip().replace('\n', ' ').replace('\r', '')
+        
+        # Remove obvious corrupted data patterns
+        corrupted_patterns = [
+            r'\d+kg',  # Weight data mixed in
+            r'\d+\.\d+\s*hrs',  # Time data mixed in
+            r'\s+\d+kg\s*$',  # Weight at end
+            r'^\s*[A-Z]\s*$',  # Single letters
+            r'^\s*[A-Z]\s*\d+\s*$',  # Single letter followed by number
+        ]
+        
+        for pattern in corrupted_patterns:
+            price = re.sub(pattern, '', price, flags=re.IGNORECASE)
+        
+        price = price.strip()
+        
+        # If empty after cleaning, return None
+        if not price:
+            return None
+            
+        # If it contains multiple price-like patterns, take the first valid one
+        price_patterns = [
+            r'\$\d+(?:,\d{3})*(?:\.\d{2})?',  # $1,234.56
+            r'\$\d+(?:-\d+)?',  # $100 or $100-200
+            r'\d+(?:,\d{3})*(?:\.\d{2})?\s*\$',  # 1234.56$
+        ]
+        
+        for pattern in price_patterns:
+            match = re.search(pattern, price)
+            if match:
+                return match.group(0)
+        
+        # If it's a common valid non-numeric price, keep it
+        valid_non_numeric = ['Call', 'Contact', 'See website', 'N/A', 'TBD', 'Ask']
+        for valid_price in valid_non_numeric:
+            if valid_price.lower() in price.lower():
+                return valid_price
+        
+        # If price looks corrupted, return None
+        if len(price) > 50 or re.search(r'[^\w\s\$\.,\-]', price):
+            logger.warning(f"Corrupted price data detected: {price}")
+            return None
+            
+        return price
+
+    def _clean_yard(self, yard: str) -> Optional[str]:
+        """
+        Clean and validate yard/business name data.
+        
+        Args:
+            yard: Raw yard string
+            
+        Returns:
+            str: Cleaned yard string or None if invalid
+        """
+        if not yard or not isinstance(yard, str):
+            return None
+            
+        # Remove extra whitespace and newlines
+        yard = yard.strip().replace('\n', ' ').replace('\r', '')
+        
+        # Remove obvious corrupted data patterns
+        corrupted_patterns = [
+            r'\$\d+(?:,\d{3})*(?:\.\d{2})?',  # Price data mixed in
+            r'\d+kg',  # Weight data mixed in
+            r'\d+\.\d+\s*hrs',  # Time data mixed in
+            r'^\s*[A-Z]\s*\d*\s*$',  # Single letters with optional numbers
+        ]
+        
+        for pattern in corrupted_patterns:
+            yard = re.sub(pattern, '', yard, flags=re.IGNORECASE)
+        
+        yard = yard.strip()
+        
+        # If empty after cleaning, return None
+        if not yard:
+            return None
+            
+        # If it's obviously a price, return None
+        if yard.startswith('$') or yard.endswith('$'):
+            logger.warning(f"Price data found in yard field: {yard}")
+            return None
+            
+        # If yard name is too short or contains mostly numbers, likely corrupted
+        if len(yard) < 3 or re.search(r'^\d+$', yard):
+            logger.warning(f"Corrupted yard data detected: {yard}")
+            return None
+            
+        return yard
+
+    def _clean_location(self, location: str) -> Optional[str]:
+        """
+        Clean and validate location data.
+        
+        Args:
+            location: Raw location string
+            
+        Returns:
+            str: Cleaned location string or None if invalid
+        """
+        if not location or not isinstance(location, str):
+            return None
+            
+        # Remove extra whitespace and newlines
+        location = location.strip().replace('\n', ' ').replace('\r', '')
+        
+        # Remove obvious corrupted data patterns
+        corrupted_patterns = [
+            r'\$\d+(?:,\d{3})*(?:\.\d{2})?',  # Price data mixed in
+            r'\d+kg',  # Weight data mixed in
+            r'\d+\.\d+\s*hrs',  # Time data mixed in
+        ]
+        
+        for pattern in corrupted_patterns:
+            location = re.sub(pattern, '', location, flags=re.IGNORECASE)
+        
+        location = location.strip()
+        
+        # If empty after cleaning, return None
+        if not location:
+            return None
+            
+        # If location is too short, likely corrupted
+        if len(location) < 2:
+            logger.warning(f"Corrupted location data detected: {location}")
+            return None
+            
+        return location
+
     def _extract_vehicle_info_from_listing(self, listing_element, source_url: str) -> Optional[Vehicle]:
         """
         Extract vehicle information from a listing element.
@@ -100,13 +296,13 @@ class BaseScraper(ABC):
             year = year_match.group(0) if year_match else None
             
             # Extract location information
-            location = self._extract_location_from_context(text_content)
+            location = self._clean_location(self._extract_location_from_context(text_content))
             
             # Extract date information
             date_added = self._extract_date_from_context(text_content)
             
             # Extract price information
-            price = self._extract_price_from_context(text_content)
+            price = self._clean_price(self._extract_price_from_context(text_content))
             
             # Create vehicle object
             vehicle = Vehicle(

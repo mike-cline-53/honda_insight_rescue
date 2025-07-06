@@ -7,45 +7,17 @@ import re
 import time
 import logging
 from typing import List, Dict, Optional
-from dataclasses import dataclass
+from .base_scraper import BaseScraper, Vehicle
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@dataclass
-class Vehicle:
-    """Data class for vehicle listings."""
-    vin: str
-    year: Optional[str] = None
-    make: Optional[str] = None
-    model: Optional[str] = None
-    location: Optional[str] = None
-    yard: Optional[str] = None
-    row: Optional[str] = None
-    date_added: Optional[str] = None
-    source_url: Optional[str] = None
-    
-    def to_dict(self) -> Dict:
-        """Convert to dictionary for serialization."""
-        return {
-            'vin': self.vin,
-            'year': self.year,
-            'make': self.make,
-            'model': self.model,
-            'location': self.location,
-            'yard': self.yard,
-            'row': self.row,
-            'date_added': self.date_added,
-            'source_url': self.source_url,
-            'scraped_at': datetime.now().isoformat()
-        }
-
-class Row52Scraper:
+class Row52Scraper(BaseScraper):
     """Scraper for Row52.com Honda Insight listings."""
     
     def __init__(self):
-        self.name = "Row52"
+        super().__init__("Row52")
         self.base_url = "https://www.row52.com"
         self.search_url = f"{self.base_url}/Search/?YMMorVin=YMM&Year=1999-2006&V1=&V2=&V3=&V4=&V5=&V6=&V7=&V8=&V9=&V10=&V11=&V12=&V13=&V14=&V15=&V16=&V17=&ZipCode=&Page=1&ModelId=2466&MakeId=145&LocationId=&IsVin=false&Distance=50"
         self.headers = {
@@ -90,11 +62,30 @@ class Row52Scraper:
         logger.info(f"Found {len(found_vins)} VINs total, {len(unique_vins)} unique Honda Insight VINs")
         
         for vin in unique_vins:
+            # Validate VIN before processing
+            if not self._is_valid_honda_insight_vin(vin):
+                logger.warning(f"Invalid Honda Insight VIN found: {vin}")
+                continue
+                
             vehicle = self._extract_vehicle_details(vin, html_content)
             if vehicle:
                 vehicles.append(vehicle)
         
         return vehicles
+    
+    def _expand_truncated_location(self, location: str) -> str:
+        """Expand truncated location names to their full names."""
+        truncation_mapping = {
+            'Arlingto': 'Arlington',
+            'Vancouve': 'Vancouver',
+            'Fairfiel': 'Fairfield',
+            'Rancho C': 'Rancho Cordova',
+            'Sacram': 'Sacramento',
+            'Portlan': 'Portland',
+            'Seattl': 'Seattle'
+        }
+        
+        return truncation_mapping.get(location, location)
     
     def _extract_vehicle_details(self, vin: str, html_content: str) -> Optional[Vehicle]:
         """Extract detailed information for a specific VIN."""
@@ -114,7 +105,12 @@ class Row52Scraper:
             
             # Extract location information
             location_patterns = [
+                # Exact full city names (keep existing)
                 r'(Fresno|Arlington|Tacoma|Vancouver|Fairfield|Rancho Cordova|Sacramento|Portland|Seattle|San Francisco)',
+                # Partial city names (handle truncation)
+                r'(Arlingto|Vancouve|Fairfiel|Rancho C|Sacram|Portlan|Seattl)',
+                # Generic city patterns
+                r'([A-Z][a-z]{4,})\s*(?:,\s*[A-Z]{2})?',  # City names with optional state
                 r'([A-Z][a-z]+,\s*[A-Z]{2})'  # City, State format
             ]
             
@@ -123,12 +119,16 @@ class Row52Scraper:
                 location_match = re.search(pattern, context)
                 if location_match:
                     location = location_match.group(1)
+                    # Expand truncated location names
+                    location = self._expand_truncated_location(location)
                     break
             
             # Extract yard information
             yard_patterns = [
                 r'PICK-n-PULL\s+([A-Za-z\s]+)',
-                r'(PICK-n-PULL\s+[A-Za-z\s]+)'
+                r'(PICK-n-PULL\s+[A-Za-z\s]+)',
+                # Handle truncated yard names
+                r'(Arlingto|Vancouve|Fairfiel|Rancho C|Sacram|Portlan|Seattl|Fresno|Tacoma)'
             ]
             
             yard = None
@@ -136,6 +136,8 @@ class Row52Scraper:
                 yard_match = re.search(pattern, context)
                 if yard_match:
                     yard = yard_match.group(1).strip()
+                    # Expand truncated yard names
+                    yard = self._expand_truncated_location(yard)
                     break
             
             # Extract row information

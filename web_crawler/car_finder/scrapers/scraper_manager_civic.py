@@ -17,7 +17,7 @@ from .wilberts_scraper import WilbertsScraper
 from .lkq_scraper import LKQScraper
 from .nvpap_scraper import NVPAPScraper
 from .pullnsave_scraper import PullNSaveScraper
-from .carpart_scraper import CarPartScraper
+from .carpart_scraper_selenium import CarPartSeleniumScraper
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ScraperManagerCivic:
             'lkq': LKQScraper(),
             'nvpap': NVPAPScraper(),
             'pullnsave': PullNSaveScraper(),
-            'carpart': CarPartScraper()
+            'carpart': CarPartSeleniumScraper()
         }
         
         # Configure scrapers for Honda Civic
